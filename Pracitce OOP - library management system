@@ -1,0 +1,74 @@
+class Book:
+    def __init__(self, title, author, barcode):
+        self.title = title
+        self.author = author
+        self.barcode = barcode
+
+    def is_on_loan(self, borrower):
+        if self in borrower.items_loaned:
+            return "Book is currently on loan"
+        else:
+            return "Book is available"
+
+    def __repr__(self):
+        return f"Book(title='{self.title}', author='{self.author}', barcode={self.barcode})"
+
+
+class Borrower:
+    def __init__(self, name, member_number):
+        self.name = name
+        self.member_number = member_number
+        self.items_loaned = []
+
+    def borrow_book(self, book, library):
+        self.items_loaned.append(book)
+        library.subtract_book(book)
+
+    def return_book(self, book, library):
+        self.items_loaned.remove(book)
+        library.add_book(book)
+
+    def check_on_loan(self):
+        items_out = ""
+        for book in self.items_loaned:
+            items_out += repr(book) + "\n"
+        return f"Items on loan to {self.name}\n{items_out}"
+
+
+class Library:
+    def __init__(self, name):
+        self.name = name
+        self.books = []
+
+    def add_book(self, *books):
+        for book in books:
+            self.books.append(book)
+
+    def subtract_book(self, book):
+        self.books.remove(book)
+
+    def show_available_books(self):
+        books_avail = ""
+        for book in self.books:
+            books_avail += repr(book) + "\n"
+        return f"Items available for loan\n{books_avail}"
+
+
+library1 = Library("Test Library")
+book1 = Book("Noddy", "Noddy", 10)
+book2 = Book("Rick n Morty", "Pickle Rick", 95)
+book3 = Book("Snow White", "Creepy Dwarf Man", 32)
+book4 = Book("Some Book", "Some Author", 40)
+book5 = Book("Family Guy", "Peter Griffin", 80)
+library1.add_book(book1, book2, book3, book4, book5)
+
+borrower1 = Borrower("Al", 21358)
+borrower1.borrow_book(book1, library1)
+
+print(library1.show_available_books())
+print(borrower1.check_on_loan())
+
+borrower1.return_book(book1, library1)
+
+print(borrower1.check_on_loan())
+print(library1.show_available_books())
