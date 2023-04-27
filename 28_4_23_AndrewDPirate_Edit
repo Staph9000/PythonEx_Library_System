@@ -1,0 +1,133 @@
+class Book:
+    def __init__(self, title, author, barcode):
+        self.title = title
+        self.author = author
+        self.barcode = barcode
+        self.borrower = None
+
+    def borrow(self, borrower):
+        self.borrower = borrower
+
+    def get_borrower(self):
+        return self.borrower
+
+    def is_on_loan(self):
+        return self.borrower is not None
+
+    def __repr__(self):
+        return f"Book(title='{self.title}', author='{self.author}', barcode={self.barcode}, borrower={self.borrower})"
+
+
+class Borrower:
+    def __init__(self, name, member_number):
+        self.name = name
+        self.member_number = member_number
+        self.items_loaned = set()
+
+    def borrow_books(self, books):
+        for book in books:
+            self.items_loaned.add(book)
+            book.borrow(self)
+
+    def return_books(self, books):
+        for book in books:
+            self.items_loaned.remove(book)
+            book.borrow(None)
+
+    def __repr__(self):
+        return f"Borrower(name='{self.name}', member_number='{self.member_number}')"
+
+    def report_loaned(self):
+        items_out = "\n   ".join(repr(book) for book in self.items_loaned)
+        return f"Items on loan to {self.name}:\n   {items_out}"
+
+
+class Library:
+    def __init__(self, name):
+        self.name = name
+        self.books = set()
+        self.borrowers = set()
+        self.last_borrower_id = 0
+
+    def add_books(self, *books):
+        self.books = self.books.union(books)
+
+    def subtract_books(self, *books):
+        self.books = self.books - {*books}
+
+    def add_borrower(self, name):
+        self.last_borrower_id += 1
+        borrower = Borrower(name, self.last_borrower_id)
+        self.borrowers.add(borrower)
+        return borrower
+
+    def borrow_books(self, borrower, books):
+        borrowable_books = {book for book in books if book in self.books and not book.is_on_loan()}
+        borrower.borrow_books(borrowable_books)
+        return books - borrowable_books     # Returns set of un-borrowable books.
+
+    def return_books(self, borrower, books):
+        returnable_books = {book for book in books if book in self.books and book.is_on_loan()}
+        borrower.return_books(returnable_books)
+        return books - returnable_books     # Returns set of un-returnable books.
+
+    def show_available_books(self):
+        books_avail = "\n   ".join(repr(book) for book in self.books if not book.is_on_loan())
+        return f"Items available for loan:\n   {books_avail}"
+
+    def find_books(self, search, on_loan=False):
+        return {book for book in self.books if (search in book.title or str(book.barcode) == search) and book.is_on_loan() == on_loan}
+
+
+library1 = Library("Test Library")
+book1 = Book("Noddy", "Noddy", 10)
+book2 = Book("Rick n Morty", "Pickle Rick", 95)
+book3 = Book("Snow White", "Creepy Dwarf Man", 32)
+book4 = Book("Some Book", "Some Author", 40)
+book5 = Book("Family Guy", "Peter Griffin", 80)
+library1.add_books(book1, book2, book3, book4, book5)
+print(library1.show_available_books())
+
+print()
+borrower1 = library1.add_borrower("Al")
+print("Borrower added:", borrower1)
+borrower2 = library1.add_borrower("Bob")
+print("Borrower added:", borrower2)
+
+print()
+books_to_borrow = {book1}
+print(borrower1, "is trying to borrow:\n  ", "\n   ".join(repr(book) for book in books_to_borrow))
+un_borrowable = library1.borrow_books(borrower1, books_to_borrow)
+if un_borrowable:
+    print("These books were not borrowable:\n  ", "\n   ".join(repr(book) for book in un_borrowable))
+print("These books were borrowed by", borrower1, "\n  ", "\n   ".join(repr(book) for book in books_to_borrow - un_borrowable))
+print(library1.show_available_books())
+print(borrower1.report_loaned())
+
+print()
+books_to_borrow = {book1, book2}
+print(borrower2, "is trying to borrow:\n  ", "\n   ".join(repr(book) for book in books_to_borrow))
+un_borrowable = library1.borrow_books(borrower2, books_to_borrow)
+if un_borrowable:
+    print("These books were not borrowable:\n   ", "\n   ".join(repr(book) for book in un_borrowable))
+print("These books were borrowed by", borrower2, "\n  ", "\n   ".join(repr(book) for book in books_to_borrow - un_borrowable))
+print(library1.show_available_books())
+print(borrower2.report_loaned())
+
+print()
+library1.return_books(borrower1, {book1})
+print(borrower1, "has returned book", book1)
+print(library1.show_available_books())
+print(borrower1.report_loaned())
+
+print()
+search_input = input("Enter title or barcode: ")
+found_books = library1.find_books(search_input, on_loan=False)
+if found_books:
+    print("Found books:\n   ", "\n   ".join(repr(found_book) for found_book in found_books))
+else:
+    found_books = library1.find_books(search_input, on_loan=True)
+    if found_books:
+        print("Found books:\n   ", "\n   ".join((repr(found_book)+", loaned to "+repr(found_book.get_borrower())) for found_book in found_books))
+    else:
+        print("No books found matching:", search_input)
